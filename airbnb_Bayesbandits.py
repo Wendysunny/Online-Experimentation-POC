@@ -230,7 +230,6 @@ plt.figure(figsize=(12, 6))
 plt.bar(selections.keys(), selections.values(), color=sns.color_palette("viridis", len(bandits)))
 plt.title('Total Times Each Variation Was Shown', fontsize=16)
 plt.ylabel('Number of Trials', fontsize=12)
-
-plt.savefig('images/final_allocation.png')
+plt.savefig('final_allocation.png')
 plt.close()
 
