@@ -155,7 +155,7 @@ def plot_distributions(bandits, trial_number):
     plt.xlabel('Conversion Rate', fontsize=12)
     plt.ylabel('Density', fontsize=12)
     plt.legend()
-    plt.savefig(f'images/distribution_trial_{trial_number}.png')
+    plt.savefig(f'distribution_trial_{trial_number}.png')
     plt.close() # Prevents the plot from displaying in the console
 
 
