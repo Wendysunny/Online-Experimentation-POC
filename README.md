@@ -32,7 +32,10 @@ The simulation shows the algorithm quickly identifying the "Smart Summary" varia
 ![Final Traffic Allocation](final_allocation.png)
 
 #### Learning Over Time
-*(Here, you would embed one of the distribution plots, e.g., the final one)*
+![Posterior Distributions](distribution_trial_100.png)
+![Posterior Distributions](distribution_trial_500.png)
+![Posterior Distributions](distribution_trial_2000.png)
+![Posterior Distributions](distribution_trial_5000.png)
 ![Posterior Distributions](distribution_trial_20000.png)
 
 ## How to Run This Project
