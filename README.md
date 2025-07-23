@@ -57,7 +57,7 @@ The simulation shows the algorithm quickly identifying the "Smart Summary" varia
 
 4.  **Run the script:**
     ```bash
-    python airbnb_bandits_script.py
+    python Bayesbandits.py
     ```
     The script will run the simulation, print the final results to the console, and save the plots.
 
