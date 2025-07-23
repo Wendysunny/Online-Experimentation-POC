@@ -33,7 +33,7 @@ The simulation shows the algorithm quickly identifying the "Smart Summary" varia
 
 #### Learning Over Time
 *(Here, you would embed one of the distribution plots, e.g., the final one)*
-![Posterior Distributions](final_distributions.png)
+![Posterior Distributions](distribution_trial_20000.png)
 
 ## How to Run This Project
 
