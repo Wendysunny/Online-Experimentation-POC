@@ -18,28 +18,22 @@
 #   showing it to more users to maximize bookings.
 
 # ## Step 1: Imports and Class Definition
-#
-# First, we'll import the necessary libraries for numerical operations (`numpy`), 
-# plotting (`matplotlib`, `seaborn`), statistical distributions (`scipy`), and
-# interacting with the operating system (`os`).
+# First, import the necessary libraries for numerical operations (`numpy`), 
+# visualization (`matplotlib`, `seaborn`), statistical distributions (`scipy`)
 
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import beta
 import seaborn as sns
-import os
 import copy
 
 # Set a professional plot style
 sns.set(style="whitegrid")
 
-# --- Set a random seed for reproducibility ---
+# Set a random seed for reproducibility
 np.random.seed(42)
 
-# --- Create a directory to save images if it doesn't exist ---
-if not os.path.exists('images'):
-    os.makedirs('images')
-
+# Define Bayesian Bandit function for sampling
 class BayesianBandit:
     """
     Represents a single 'arm' or variation in our experiment.
@@ -66,11 +60,10 @@ class BayesianBandit:
         return self.alpha / (self.alpha + self.beta)
 
 # ## Step 2: Setup the Experiment
-#
-# Now, we'll configure the simulation. We'll define our experimental variations and 
+# Now, define our experimental variations and 
 # their *true* (but unknown to the algorithm) conversion rates.
 
-# Define the true, unknown conversion rates for each variation.
+# Define the true conversion rates for each variation
 true_conversion_rates = {
     "Control": 0.030,       # 3.0% booking rate
     "Icons": 0.032,         # 3.2% booking rate (a small improvement)
@@ -82,8 +75,7 @@ num_trials = 20000 # Simulate 20,000 users visiting the listing page
 checkpoints = [100, 500, 2000, 5000, num_trials]
 
 # ## Step 3: Run Simulations and Collect Data
-#
-# We will now run both simulations trial-by-trial to collect data for our plots.
+# Run both simulations trial-by-trial to collect data for our plots.
 
 # --- Bayesian Bandit Simulation ---
 print("--- Running Bayesian Bandit Simulation ---")
@@ -127,12 +119,10 @@ for i in range(num_trials):
     ab_test_total_reward += reward
     ab_conversion_history.append(ab_test_total_reward / (i + 1))
 
-
 # ## Step 4: Create Plots
-#
-# Now we use the collected data to generate our visualizations.
+# Now use the collected data to generate our visualizations.
 
-# --- Plot 1: Bandit Posterior Distributions Panel ---
+# Plot 1: Bandit Posterior Distributions Panel
 print("\n--- Generating plot: Distribution Panel ---")
 fig, axes = plt.subplots(2, 3, figsize=(20, 10))
 axes = axes.flatten() # Flatten the 2x3 grid into a 1D array
@@ -156,7 +146,7 @@ fig.tight_layout(rect=[0, 0.03, 1, 0.95])
 plt.savefig('distribution_panel.png')
 plt.close()
 
-# --- Plot 2: Cumulative Conversion Rate History ---
+# Plot 2: Cumulative Conversion Rate History
 print("--- Generating plot: Conversion Rate History ---")
 plt.figure(figsize=(14, 7))
 plt.plot(bandit_conversion_history, label='Bayesian Bandit')
@@ -169,7 +159,7 @@ plt.grid(True, which='both', linestyle='--', linewidth=0.5)
 plt.savefig('conversion_rate_history.png')
 plt.close()
 
-# --- Plot 3: Final Traffic Allocation for Bandit ---
+# Plot 3: Final Traffic Allocation for Bandit
 print("--- Generating plot: Final Bandit Traffic Allocation ---")
 labels = list(true_conversion_rates.keys())
 bandit_counts = list(bandit_selections.values())
@@ -181,11 +171,8 @@ plt.ylabel('Number of Trials (Users)', fontsize=12)
 plt.savefig('final_allocation_bandit.png')
 plt.close()
 
-
 # ## Step 5: Analyze and Compare Final Results
-#
-# With both simulations complete, we'll print a summary and compare their
-# performance directly.
+# With both simulations complete, print a summary and compare their performance directly
 
 print("\n--- Simulation Complete: Final Comparison ---")
 
