@@ -1,5 +1,5 @@
 # Bayesian Bandits for Airbnb Experimentation
-# A Proof of Concept
+# A Proof of Concept with A/B Test Comparison
 
 # ### The Airbnb Problem: Optimizing for Bookings
 #
@@ -17,81 +17,44 @@
 # * **Exploit:** Once we have evidence that a variation is winning, we should start 
 #   showing it to more users to maximize bookings.
 
-# ### The Bayesian Bandit Solution
-#
-# This proof-of-concept uses a **Bayesian multi-armed bandit** approach with 
-# **Thompson Sampling** to solve this problem.
-#
-# 1. **The "Arms"**: Each variation of the amenity display (`Control`, `Icons`, 
-#    `Smart Summary`, `Visual Grid`) is an "arm" of a multi-armed bandit.
-#
-# 2. **Modeling Beliefs**: We model our belief about the true booking rate of each 
-#    arm using a **Beta distribution**. Initially, this distribution is flat (a uniform 
-#    distribution from 0 to 1), signifying that any conversion rate is equally likely.
-#
-# 3. **Thompson Sampling in Action**: For each user that visits the page, the algorithm 
-#    does the following:
-#    * It draws one random sample from each arm's current Beta distribution. You can 
-#      think of this sample as a "plausible" conversion rate for that arm, given the 
-#      data seen so far.
-#    * It shows the user the variation that had the **highest sample**.
-#    * It observes the user's action (booking or no booking).
-#    * It updates the Beta distribution of the variation that was shown. A booking 
-#      makes the distribution's mean shift higher; a non-booking makes it shift lower.
-
 # ## Step 1: Imports and Class Definition
 #
 # First, we'll import the necessary libraries for numerical operations (`numpy`), 
-# plotting (`matplotlib`, `seaborn`), and statistical distributions (`scipy`).
-#
-# We also define the `BayesianBandit` class. This class represents a single 'arm' or 
-# variation in our experiment. It handles the logic for storing successes and failures 
-# (as `alpha` and `beta` parameters of a Beta distribution), sampling from the 
-# distribution, and updating it with new results.
+# plotting (`matplotlib`, `seaborn`), statistical distributions (`scipy`), and
+# interacting with the operating system (`os`).
 
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import beta
 import seaborn as sns
+import os
+import copy
 
 # Set a professional plot style
 sns.set(style="whitegrid")
 
+# --- Set a random seed for reproducibility ---
+np.random.seed(42)
+
+# --- Create a directory to save images if it doesn't exist ---
+if not os.path.exists('images'):
+    os.makedirs('images')
+
 class BayesianBandit:
     """
     Represents a single 'arm' or variation in our experiment.
-    
-    This class models our belief about the conversion rate of a single variation 
-    using a Beta distribution. The Beta distribution is a great choice for modeling
-    the probability of a binary outcome (like a booking).
-
-    Attributes:
-        name (str): The name of the variation (e.g., "Control", "Icons").
-        alpha (int): The number of successes (e.g., bookings). Initialized to 1.
-        beta (int): The number of failures (e.g., no booking). Initialized to 1.
     """
     def __init__(self, name):
         self.name = name
-        # We start with an uninformative prior (alpha=1, beta=1), which is a uniform distribution.
-        # This represents our initial lack of knowledge about the arm's performance.
         self.alpha = 1
         self.beta = 1
 
     def sample(self):
-        """
-        Draws a random sample from the current Beta distribution.
-        This is the core of Thompson Sampling. The sampled value represents a plausible
-        conversion rate for this arm, given the data we've seen so far.
-        """
+        """Draws a random sample from the current Beta distribution."""
         return np.random.beta(self.alpha, self.beta)
 
     def update(self, result):
-        """
-        Updates the Beta distribution based on the result of a trial.
-        
-        Args:
-            result (int): 1 for a success (booking), 0 for a failure.
-        """
+        """Updates the Beta distribution based on the result of a trial."""
         if result == 1:
             self.alpha += 1
         else:
@@ -105,22 +68,9 @@ class BayesianBandit:
 # ## Step 2: Setup the Experiment
 #
 # Now, we'll configure the simulation. We'll define our experimental variations and 
-# their *true* (but unknown to the algorithm) conversion rates. This allows us to 
-# simulate how users would react to each design.
-#
-# **Use Case**: Optimizing the Amenity Display on a Listing Page.
-#
-# The "Arms" (Variations):
-# * **Control**: The current list-based display.
-# * **Icons**: Highlights top amenities with icons.
-# * **Smart Summary**: AI-powered summary of amenities relevant to the guest's search.
-# * **Visual Grid**: A more visual, grid-based layout.
-#
-# We also initialize a `BayesianBandit` object for each variation and set up some 
-# data trackers.
+# their *true* (but unknown to the algorithm) conversion rates.
 
 # Define the true, unknown conversion rates for each variation.
-# In a real experiment, we wouldn't know these.
 true_conversion_rates = {
     "Control": 0.030,       # 3.0% booking rate
     "Icons": 0.032,         # 3.2% booking rate (a small improvement)
@@ -128,108 +78,125 @@ true_conversion_rates = {
     "Visual Grid": 0.028    # 2.8% booking rate (worse than control)
 }
 
-bandits = [BayesianBandit(name) for name in true_conversion_rates.keys()]
-
 num_trials = 20000 # Simulate 20,000 users visiting the listing page
+checkpoints = [100, 500, 2000, 5000, num_trials]
 
-# Data trackers for analysis
-selections = {name: 0 for name in true_conversion_rates.keys()}
-total_reward = 0
-rewards_per_bandit = {name: 0 for name in true_conversion_rates.keys()}
-
-
-# ## Step 3: Define a Helper Function for Plotting
+# ## Step 3: Run Simulations and Collect Data
 #
-# This function will help us visualize the posterior Beta distribution for each bandit 
-# at different points in the simulation. This is key to understanding how the 
-# algorithm is learning and updating its beliefs over time.
+# We will now run both simulations trial-by-trial to collect data for our plots.
 
-def plot_distributions(bandits, trial_number):
-    """Helper function to visualize the posterior distributions of the bandits."""
-    plt.figure(figsize=(12, 6))
-    x = np.linspace(0, 0.1, 200) # Range of possible conversion rates
-    for bandit in bandits:
-        y = beta.pdf(x, bandit.alpha, bandit.beta)
-        plt.plot(x, y, label=f'{bandit.name} (ECR: {bandit.estimated_conversion_rate:.3%})')
-    plt.title(f'Posterior Distributions after {trial_number} Trials', fontsize=16)
-    plt.xlabel('Conversion Rate', fontsize=12)
-    plt.ylabel('Density', fontsize=12)
-    plt.legend()
-    plt.savefig(f'distribution_trial_{trial_number}.png')
-    plt.close() # Prevents the plot from displaying in the console
-
-
-# ## Step 4: Run the Simulation
-#
-# This is the core of the experiment. We loop for the total number of trials (users). 
-# In each loop, we perform Thompson Sampling:
-# 1.  **Sample**: Draw a random value from each bandit's posterior distribution.
-# 2.  **Select**: Choose the bandit (variation) with the highest sample.
-# 3.  **Simulate**: Simulate a user interacting with that variation and determine the 
-#     outcome (a booking or not) based on its true conversion rate.
-# 4.  **Update**: Update the chosen bandit's distribution with the outcome.
-#
-# We'll also periodically call our plotting function to see the learning process in action.
+# --- Bayesian Bandit Simulation ---
+print("--- Running Bayesian Bandit Simulation ---")
+bandits = [BayesianBandit(name) for name in true_conversion_rates.keys()]
+bandit_selections = {name: 0 for name in true_conversion_rates.keys()}
+bandit_total_reward = 0
+bandit_conversion_history = []
+bandit_states_at_checkpoints = []
 
 for i in range(num_trials):
-    # 1. Sample from each bandit's posterior distribution.
     samples = [b.sample() for b in bandits]
-    
-    # 2. Choose the bandit with the highest sample.
     chosen_bandit_index = np.argmax(samples)
     chosen_bandit = bandits[chosen_bandit_index]
     
-    # 3. Simulate the user's response to the chosen variation.
     true_rate = true_conversion_rates[chosen_bandit.name]
     reward = 1 if np.random.random() < true_rate else 0
     
-    # 4. Update the chosen bandit's distribution with the result.
     chosen_bandit.update(reward)
     
-    # Record results
-    selections[chosen_bandit.name] += 1
-    total_reward += reward
-    rewards_per_bandit[chosen_bandit.name] += reward
+    bandit_selections[chosen_bandit.name] += 1
+    bandit_total_reward += reward
+    bandit_conversion_history.append(bandit_total_reward / (i + 1))
 
-    # Periodically plot the distributions to see the learning process
-    if i + 1 in [100, 500, 2000, 5000, num_trials]:
-        print(f"--- Plotting at trial {i+1} ---")
-        plot_distributions(bandits, i + 1)
+    if i + 1 in checkpoints:
+        # Save the state of the bandits at this checkpoint for later plotting
+        bandit_states_at_checkpoints.append(copy.deepcopy(bandits))
 
-# ## Step 5: Analyze the Final Results
+# --- Traditional A/B Test Simulation ---
+print("\n--- Running Traditional A/B Test Simulation ---")
+ab_test_total_reward = 0
+ab_conversion_history = []
+variation_names = list(true_conversion_rates.keys())
+num_variations = len(variation_names)
+
+for i in range(num_trials):
+    # Assign user to a variation in a round-robin fashion for even split
+    variation_name = variation_names[i % num_variations]
+    true_rate = true_conversion_rates[variation_name]
+    
+    reward = 1 if np.random.random() < true_rate else 0
+    ab_test_total_reward += reward
+    ab_conversion_history.append(ab_test_total_reward / (i + 1))
+
+
+# ## Step 4: Create Plots
 #
-# With the simulation complete, we'll print a summary of the results. This includes 
-# the total number of bookings and a breakdown for each variation, showing how many 
-# times it was shown and what its observed conversion rate was compared to its true rate.
+# Now we use the collected data to generate our visualizations.
 
-print("\n--- Simulation Complete ---")
-print(f"Total Trials: {num_trials}")
-print(f"Total Bookings (Reward): {total_reward}\n")
+# --- Plot 1: Bandit Posterior Distributions Panel ---
+print("\n--- Generating plot: Distribution Panel ---")
+fig, axes = plt.subplots(2, 3, figsize=(20, 10))
+axes = axes.flatten() # Flatten the 2x3 grid into a 1D array
 
-print("--- Results per Variation ---")
-for bandit in bandits:
-    pulls = selections[bandit.name]
-    conv_rate = (rewards_per_bandit[bandit.name] / pulls) if pulls > 0 else 0
-    print(
-        f"  - {bandit.name}:\n"
-        f"    - Pulled {pulls} times ({pulls/num_trials:.2%})\n"
-        f"    - True Rate: {true_conversion_rates[bandit.name]:.3%}\n"
-        f"    - Observed Rate: {conv_rate:.3%}"
-    )
+for i, (bandits_state, trial_num) in enumerate(zip(bandit_states_at_checkpoints, checkpoints)):
+    ax = axes[i]
+    x = np.linspace(0, 0.1, 200)
+    for bandit in bandits_state:
+        y = beta.pdf(x, bandit.alpha, bandit.beta)
+        ax.plot(x, y, label=f'{bandit.name} (ECR: {bandit.estimated_conversion_rate:.3%})')
+    ax.set_title(f'Distributions after {trial_num} Trials')
+    ax.legend()
+    ax.set_xlabel('Conversion Rate')
+    ax.set_ylabel('Density')
 
+# Hide the last unused subplot
+axes[-1].axis('off')
 
-# ## Step 6: Plot Final Traffic Allocation
-#
-# Finally, we'll create a bar chart to visualize how the algorithm allocated traffic 
-# over the course of the experiment. This plot clearly shows the explore-exploit 
-# dynamic: after an initial period of exploration, the algorithm heavily exploited 
-# the winning variation (`Smart Summary`) while allocating very little traffic to the 
-# underperforming ones.
+fig.suptitle('Evolution of Bandit Posterior Beliefs Over Time', fontsize=20)
+fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+plt.savefig('distribution_panel.png')
+plt.close()
+
+# --- Plot 2: Cumulative Conversion Rate History ---
+print("--- Generating plot: Conversion Rate History ---")
+plt.figure(figsize=(14, 7))
+plt.plot(bandit_conversion_history, label='Bayesian Bandit')
+plt.plot(ab_conversion_history, label='Traditional A/B Test')
+plt.title('Cumulative Conversion Rate Over Time', fontsize=16)
+plt.xlabel('Number of Trials')
+plt.ylabel('Cumulative Conversion Rate')
+plt.legend()
+plt.grid(True, which='both', linestyle='--', linewidth=0.5)
+plt.savefig('conversion_rate_history.png')
+plt.close()
+
+# --- Plot 3: Final Traffic Allocation for Bandit ---
+print("--- Generating plot: Final Bandit Traffic Allocation ---")
+labels = list(true_conversion_rates.keys())
+bandit_counts = list(bandit_selections.values())
 
 plt.figure(figsize=(12, 6))
-plt.bar(selections.keys(), selections.values(), color=sns.color_palette("viridis", len(bandits)))
-plt.title('Total Times Each Variation Was Shown', fontsize=16)
-plt.ylabel('Number of Trials', fontsize=12)
-plt.savefig('final_allocation.png')
+plt.bar(labels, bandit_counts, color=sns.color_palette("viridis", len(labels)))
+plt.title('Bayesian Bandit: Final Traffic Allocation', fontsize=16)
+plt.ylabel('Number of Trials (Users)', fontsize=12)
+plt.savefig('final_allocation_bandit.png')
 plt.close()
+
+
+# ## Step 5: Analyze and Compare Final Results
+#
+# With both simulations complete, we'll print a summary and compare their
+# performance directly.
+
+print("\n--- Simulation Complete: Final Comparison ---")
+
+print(f"\nBayesian Bandit Total Bookings: {bandit_total_reward}")
+print(f"Traditional A/B Test Total Bookings: {ab_test_total_reward}")
+
+print("\n--- Performance Comparison ---")
+lift = bandit_total_reward - ab_test_total_reward
+lift_percentage = (lift / ab_test_total_reward) * 100
+print(f"The Bayesian Bandit approach resulted in {lift} more bookings.")
+print(f"This is a {lift_percentage:.2f}% lift in conversions during the experiment.")
+
+print("\nAll plots have been saved to the working directory.")
 
