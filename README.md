@@ -27,14 +27,10 @@ This simulation models an experiment to optimize the "amenities" display on an A
 The simulation shows the algorithm quickly identifying the "Smart Summary" variation as the winner. After an initial exploration phase, it allocates the vast majority of traffic to this winning arm.
 
 #### Final Traffic Allocation
-![Final Traffic Allocation](final_allocation.png)
+![Final Traffic Allocation](final_allocation_bandit.png)
 
 #### Learning Over Time
-![Posterior Distributions](distribution_trial_100.png)
-![Posterior Distributions](distribution_trial_500.png)
-![Posterior Distributions](distribution_trial_2000.png)
-![Posterior Distributions](distribution_trial_5000.png)
-![Posterior Distributions](distribution_trial_20000.png)
+![Posterior Distributions](distribution_panel.png)
 
 ## How to Run This Project
 
