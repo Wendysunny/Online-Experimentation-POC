@@ -29,6 +29,9 @@ The simulation shows the algorithm quickly identifying the "Smart Summary" varia
 #### Final Traffic Allocation
 ![Final Traffic Allocation](final_allocation_bandit.png)
 
+#### Conversion Rate Over Time
+![Conversion Rate History](conversion_rate_history.png)
+
 #### Learning Over Time
 ![Posterior Distributions](distribution_panel.png)
 
