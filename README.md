@@ -1,6 +1,6 @@
-# AirBnB-Online-Experimentation-POC
+# Online-Experimentation-POC
 
-# Bayesian Bandits for Airbnb Experimentation
+# Bayesian Bandits for Online Experimentation
 
 This project is a Python-based proof-of-concept demonstrating how a Bayesian multi-armed bandit algorithm (using Thompson Sampling) can be applied to online experimentation at a company like Airbnb. The simulation aims to find the best-performing UI variation while minimizing "regret" (i.e., lost bookings from showing users an inferior option).
 
